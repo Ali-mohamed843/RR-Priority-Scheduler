@@ -1,7 +1,6 @@
-gui\MainFrame$DarkTabbedPaneUI.class
-gui\MainFrame$GlowBorder.class
 gui\ModernUIHelper.class
 gui\InputPanel$4.class
+gui\InputPanel$6.class
 gui\ResultsPanel$1.class
 model\Process.class
 gui\MainFrame.class
@@ -13,7 +12,10 @@ gui\ResultsPanel$2.class
 scheduler\RoundRobinScheduler.class
 gui\InputPanel$2.class
 gui\ResultsPanel.class
+gui\MainFrame$LightTabbedPaneUI.class
 gui\GanttChartPanel.class
 gui\InputPanel$3.class
+gui\MainFrame$SoftBorder.class
 model\SchedulingResult.class
 scheduler\PriorityScheduler.class
+gui\InputPanel$7.class

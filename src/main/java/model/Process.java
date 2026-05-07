@@ -1,7 +1,7 @@
 package model;
 
 public class Process {
-    private String pid;
+    private String pid; 
     private int arrivalTime;
     private int burstTime;
     private int priority;

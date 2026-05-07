@@ -2,12 +2,12 @@ package scheduler;
 
 import model.Process;
 import model.SchedulingResult;
-
 import java.util.*;
 
 public class PriorityScheduler {
 
     public SchedulingResult schedule(List<Process> originalProcesses) {
+
         SchedulingResult result = new SchedulingResult("Priority Scheduling (Preemptive)");
 
         List<Process> processes = new ArrayList<>();
@@ -15,19 +15,21 @@ public class PriorityScheduler {
 
         processes.sort(Comparator.comparingInt(Process::getArrivalTime));
 
-        int n          = processes.size();
-        int completed  = 0;
+        int n           = processes.size();
+        int completed   = 0;
         int currentTime = 0;
 
         PriorityQueue<Process> readyQueue = new PriorityQueue<>(
-            Comparator.comparingInt(Process::getPriority)
-                      .thenComparingInt(Process::getArrivalTime)
-        );
+        Comparator.comparingInt(Process::getPriority)
+                  .thenComparingInt(Process::getArrivalTime)
+                  .thenComparing(Process::getPid)
+    );
 
-        int nextIdx = 0; 
+        int nextIdx   = 0;
+        String lastLabel = null;
+        int    segStart  = 0;
 
-        String  lastLabel = null;
-        int     segStart  = 0;
+        Process currentRunning = null;
 
         while (completed < n) {
 
@@ -37,54 +39,72 @@ public class PriorityScheduler {
                 nextIdx++;
             }
 
-            if (readyQueue.isEmpty()) {
+            if (currentRunning == null) {
+
+                if (!readyQueue.isEmpty()) {
+                    currentRunning = readyQueue.poll();
+                }
+
+            } else {
+
+                Process topOfQueue = readyQueue.peek();
+                if (topOfQueue != null &&
+                    topOfQueue.getPriority() < currentRunning.getPriority()) {
+
+                    readyQueue.add(currentRunning);
+                    currentRunning = readyQueue.poll();
+                }
+            }
+
+            if (currentRunning == null) {
+
                 if (lastLabel != null) {
                     result.addGanttEntry(lastLabel, segStart, currentTime);
                     lastLabel = null;
                 }
-                int nextArrival = processes.get(nextIdx).getArrivalTime();
-                result.addGanttEntry("IDLE", currentTime, nextArrival);
-                currentTime = nextArrival;
+
+                if (nextIdx < n) {
+                    int nextArrival = processes.get(nextIdx).getArrivalTime();
+                    result.addGanttEntry("IDLE", currentTime, nextArrival);
+                    currentTime = nextArrival;
+                }
                 continue;
             }
 
-            Process running = readyQueue.poll();
-
-            if (!running.isFirstResponseRecorded()) {
-                running.setResponseTime(currentTime - running.getArrivalTime());
-                running.setFirstResponseRecorded(true);
+            if (!currentRunning.isFirstResponseRecorded()) {
+                currentRunning.setResponseTime(currentTime - currentRunning.getArrivalTime());
+                currentRunning.setFirstResponseRecorded(true);
             }
 
-            if (!running.getPid().equals(lastLabel)) {
+            if (!currentRunning.getPid().equals(lastLabel)) {
                 if (lastLabel != null) {
                     result.addGanttEntry(lastLabel, segStart, currentTime);
                 }
-                lastLabel = running.getPid();
+                lastLabel = currentRunning.getPid();
                 segStart  = currentTime;
             }
 
             currentTime++;
-            running.setRemainingTime(running.getRemainingTime() - 1);
+            currentRunning.setRemainingTime(currentRunning.getRemainingTime() - 1);
 
-            if (running.getRemainingTime() == 0) {
+            if (currentRunning.getRemainingTime() == 0) {
+
                 result.addGanttEntry(lastLabel, segStart, currentTime);
                 lastLabel = null;
 
-                running.setCompletionTime(currentTime);
-                running.setTurnaroundTime(currentTime - running.getArrivalTime());
-                running.setWaitingTime(running.getTurnaroundTime() - running.getBurstTime());
-                completed++;
-            } else {
-                readyQueue.add(running);
-            }
+                currentRunning.setCompletionTime(currentTime);
+                currentRunning.setTurnaroundTime(currentTime - currentRunning.getArrivalTime());
+                currentRunning.setWaitingTime(currentRunning.getTurnaroundTime() - currentRunning.getBurstTime());
 
+                completed++;
+                currentRunning = null; 
+            }
             while (nextIdx < n &&
                    processes.get(nextIdx).getArrivalTime() <= currentTime) {
                 readyQueue.add(processes.get(nextIdx));
                 nextIdx++;
             }
         }
-
         if (lastLabel != null) {
             result.addGanttEntry(lastLabel, segStart, currentTime);
         }
